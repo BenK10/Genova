@@ -1,0 +1,9 @@
+function fitness() 
+{
+var result=0;
+
+for(var i=1; i<arguments[0]+1; i++)
+result = result + arguments[i];
+
+ return result; 
+}

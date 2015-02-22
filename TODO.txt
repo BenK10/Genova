@@ -1,0 +1,65 @@
+
+UNIT TEST EVERYTHING!!!
+
+Save configuration to a file. .gen extension.
+
+Will need to learn:
+Unit testing
+Save to file
+Load from file
+
+PRIORITY
+-----------
+Change logos into Resources so filenames aren't used and don't show up in public code
+Fix the CDB issue. My program works but that's because i've been lucky. Gotta have a debugger and unit tests!
+Put on Github! Code only, no binaries. Read-only repos.
+Unit testing
+-----------
+
+After polishing the GUI, set min size for mainwindow and perhaps auto appearing scrollbars if necessary.
+
+Complete the menus (actually may not be necessary)
+
+implement more advanced selection 
+
+implement tournament selection and other selection algorithms
+
+when maxgenerations==0, ("infinity") run until fitness function finds acceptable individual. 
+
+fitness returns -1 if solution is found (optional). Assumes fitness always non-negative.
+
+Disable GUI buttons except for Stop  button when algorithm is running. Stopping runs the same code as fitness returning a solution, without a "solution found!" message.
+
+
+Make the buttons transparent by adding a style sheet color with alpha channel of 0. Make the buttons flat and broderless, fitting with the background gradient
+this works but the button doesn't highlight on mouseover, probably because the palette is empty/application default with no alpha:
+QPalette p = palette();
+button->setPalette(p);
+button->setStyleSheet( "background-color: rgba( 255, 255, 255, 0% );" );
+
+ISSUES
+=======
+Everything mostly works now but it is possible to get an index out of range for QVector(at). Only happened once.
+
+MainWindow doesn't make scrollbars - am I supposed to add these?
+
+"Genova initialized" message only appears after run() called.
+
+
+
+Roadmap:
+========
+
+Version 1: 
+Genomes and populations are fixed size (disable all checkboxes that can change this). Only one recombination/crossover method.
+
+Version 2:
+Add support for variable genetics and population sizes.
+
+Version 3:
+More procreation strategies
+
+Version ???:
+Plugins to define your own recombination strategies.
+
+

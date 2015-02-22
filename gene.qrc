@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>../../../../Pictures/icons/GenovaBIRTH_2.svg</file>
+        <file>../../../../Pictures/icons/GenovaLIFE.svg</file>
+        <file>../../../../Pictures/icons/GenovaDEATH.svg</file>
+        <file>../../../../Pictures/icons/GenovaABSOLUTE.svg</file>
+    </qresource>
+</RCC>

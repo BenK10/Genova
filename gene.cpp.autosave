@@ -1,0 +1,12 @@
+#include "gene.h"
+
+Gene::Gene()
+{
+
+}
+
+Gene::~Gene()
+{
+
+}
+

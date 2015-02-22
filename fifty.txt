@@ -1,0 +1,19 @@
+function fitness()
+{
+var points = 0;
+var under_penalty = 0.25;
+var over_penalty = 2.25;
+
+for(var i=1; i<arguments[0]+1; i++)
+    points = points + arguments[i];
+
+
+if(points < 50)
+   points = points - (50-points)*under_penalty;
+else if(points > 50)
+   points = points-(points-50)*over_penalty;
+
+//later feature: if solution score, return -1
+
+return points;
+}

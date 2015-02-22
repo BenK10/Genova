@@ -1,0 +1,19 @@
+#ifndef GENE_H
+#define GENE_H
+
+#include <QVector>
+
+template <class T> class Chromosome
+{
+private:
+    int chromosomeLength;
+    T gene;
+    QVector<T> genes;
+
+    Chromosome();
+    ~Chromosome();
+
+    friend class Genova;
+};
+
+#endif // GENE_H
