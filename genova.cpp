@@ -17,7 +17,8 @@
 
 void Genova::initialize(int genomeLength, int chromosomeLength, int populationSize, int maxGenerations,
     double elitismPercentage, double mutationPercentage, double resurrectionPercentage, double cullingThreshold,
-    bool isGenomeLengthFixed, bool isChromosomeLengthFixed, bool isPopulationFixed, QString fileName)
+    bool isGenomeLengthFixed, bool isChromosomeLengthFixed, bool isPopulationFixed, QString fileName,
+    QString selectionType, QString crossoverType, int kway, double tourneyprob)
 {
     this->genomeLength = genomeLength,
     this->chromosomeLength = chromosomeLength;
@@ -31,11 +32,17 @@ void Genova::initialize(int genomeLength, int chromosomeLength, int populationSi
     this->isChromosomeLengthFixed = isChromosomeLengthFixed;
     this->isPopulationFixed = isPopulationFixed;
     this->fileName = fileName;
+    this->selectionType = selectionType;
+    this->crossoverType = crossoverType;
+    this->kway = kway;
+    this->tourneyprob = tourneyprob;
 
     mutationRange = this->mutationPercentage * RAND_MAX;
 
     populationA.fill(Genome(genomeLength), populationSize);
     populationB.fill(Genome(genomeLength), populationSize);
+
+    roulette.reserve(populationSize);
 
     QFile file =(fileName);
     if(!file.open(QIODevice::ReadOnly | QIODevice::Text)) QMessageBox::information(0,"error",file.errorString());
@@ -60,7 +67,7 @@ void Genova::populate()
 
 Genome Genova::crossover(Genome parentA, Genome parentB)
 {
-  //single-point crossover with one child
+  //single-point crossover producing one child
   int crosspoint = qrand() % genomeLength;
   Genome child(genomeLength);
 
@@ -92,6 +99,7 @@ void Genova::splice()
 
 }
 
+//default fitness function
 double Genova::score(Genome g)
 {
     double score = 0;
@@ -135,10 +143,22 @@ QString Genova::report()
 void Genova::run()
 {
     int eliterange = populationSize * elitismPercentage;
+    int populationScore = 0;
 
+    //init and score 1st generation
     populate();
     for(int i=0; i<populationA.size(); i++)
-        populationA[i].fitnessScore = scriptScore(populationA[i]);
+        if(fileName=="") //assign default scoring fucntion
+        {
+            populationA[i].fitnessScore = score(populationA[i]);
+            populationScore += populationA[i].fitnessScore;
+        }
+        else
+        {
+            populationA[i].fitnessScore = scriptScore(populationA[i]);
+            populationScore += populationA[i].fitnessScore;
+        }
+    updateRoulette(populationA);
 
     std::sort(populationA.begin(), populationA.end());
 
@@ -146,23 +166,122 @@ void Genova::run()
     for(int i=0; i<maxGenerations; i++)
     {
         //currently selection for parent A is in order and parent B is random unless parent A is elite
+        //TODO add selection method. Both parents are selected the same way
         for(int j=0; j<populationSize; j++)
         {
+            //copy if elite
             if(j>populationSize - eliterange)
                 populationB.replace(j, populationA.at(j));
             else
             {
-            populationB.replace(j, crossover(populationA.at(j), populationA.at(qrand() % genomeLength)));
-            mutate(populationB[j]);
-            populationB[j].fitnessScore = scriptScore(populationB[j]);
+                populationB.replace(j, crossover(populationA.at(j), populationA.at(qrand() % genomeLength)));
+                mutate(populationB[j]);
+                if(fileName=="")
+                {
+                    populationB[j].fitnessScore = score(populationB[j]);
+                    populationScore += populationB[j].fitnessScore;
+                }
+                else
+                {
+                    populationB[j].fitnessScore = scriptScore(populationB[j]);
+                    populationScore += populationB[j].fitnessScore;
+                }
             }
-        }
-
+       }
         populationA = populationB;
         std::sort(populationA.begin(), populationA.end());
+        populationScore = 0;
+        updateRoulette(populationA);
     }
    emit sendReport(report());
 }
+
+//selection
+Genome Genova::selection(QVector<Genome>& population, int populationScore) const
+{
+    //TODO get rid of "magic value" strings
+    if(selectionType == "Random")
+        return population.at(qrand() % population.size());
+
+    if(selectionType == "Roulette")
+    {
+        int idx = roulette.indexOf(*std::upper_bound(roulette.begin(), roulette.end(), qrand() % populationScore));
+        return population.at(idx);
+    }
+
+    if(selectionType == "Tournament")
+        return Genova::tournamentSelection(population, kway, tourneyprob);
+}
+
+void Genova::updateRoulette(QVector<Genome> &population)
+{
+    if(roulette.size() < population.size())
+            roulette.reserve(population.size());
+
+    for(int i=0; i<roulette.size(); i++)
+        roulette[i] = 0;
+
+    for(int i=0; i<roulette.size(); i++)
+        roulette[i] += population.at(i).fitnessScore;
+}
+
+//kway should always be even (set on GUI)
+Genome Genova::tournamentSelection(QVector<Genome>& population, int kway, double probability) const
+{
+    //QList<int> competitors;
+    //QList<double> competitorScores;
+
+    QList<Genome> competitors;
+    double chance;
+
+    //select candidates
+    for(int i=0; i<kway; i++)
+        competitors.append(qrand() % population.size());
+
+    std::sort(competitors.begin(), competitors.end());
+
+    //compete
+    for(int i=0; i<kway; i++)
+    {
+        chance = (qrand() % 100)/100; //normalize qrand() to range 0-1
+        if(chance <= (probability*pow((1-probability),i))) return competitors.at(i);
+    }
+
+    //if no winner from above code, return weakest
+    return competitors.at(0);
+}
+
+/*selection implementations
+ *
+ * Roulette (fitness proportionate) implementation:  pool is array with size of population, and values of running total.
+ * Index of first item bigger than rolled value is index of selected individual in population.
+ * Use binary search std::binary_search on a list
+ *
+ * If more than one genome assigned to same percentage value,
+ * pick one randomly.
+ *
+ * Population Average roulette: take ratio r =(individual score)/(population average score)
+ * Build static selection pool that gets updated each generation.
+ * Each individual gets copies in the pool as follows:
+ * a number of copies equal to the real part of r
+ * a chance of an additional copy equal to the mantissa of r
+ * So, an individual with a relative score of 2.3 gets 2 copies and a 30% chance of an additional one
+ *
+ * Rank-Based Roulette: individual's probability of selection is proportional to its rank.
+ * Not influenced by super individuals or spreading fitness like standard (proportional) roulette wheel
+ * can avoid premature convergence. Usually better than tourney for big problems
+ *
+ * Tournament selection: also requires a mating pool. Select k individuals at random.
+ * Pick the best with probablility p
+ * second best with probaility p*(1-p)
+ * third best p = p*((1-p)^2)
+ * Deterministic tournament selection selects the best individual (when p = 1) in any tournament.
+ *  A 1-way tournament (k = 1) selection is equivalent to random selection.
+ * (info from wikipedia)
+ * Low susceptinbility to takeover, no need to sort or scale fitness. Simple and efficient.
+ * Usually good for small problems
+ *
+ * */
 
 
 

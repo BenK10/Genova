@@ -96,15 +96,18 @@ void MainWindow::on_page4Button_clicked()
 
 void MainWindow::on_startButton_clicked()
 {
+    bool ok;
     genova.initialize(ui->genome_spinBox->value(), ui->chromosome_spinBox->value(), ui->population_spinBox->value(), ui->generations_spinBox->value(),
                 ui->cloning_spinBox->value()/100, ui->mutation_spinBox->value()/100, ui->resurrection_spinBox->value()/100, ui->culling_spinBox->value()/100,
-                ui->genome_checkBox->isChecked(), ui->chromosome_checkBox->isChecked(), ui->population_checkBox->isChecked(), ui->fileSelectLineEdit->text());
+                ui->genome_checkBox->isChecked(), ui->chromosome_checkBox->isChecked(), ui->population_checkBox->isChecked(), ui->fileSelectLineEdit->text(),
+                ui->comboBox_Selection->currentText(), ui->comboBox_Crossover->currentText(), ui->tourneyComboBox->currentText().toInt(&ok, 10), ui->tourneySpinBox->value());
     ui->resultTextEdit->appendPlainText("");
     ui->resultTextEdit->appendPlainText("GENOVA initialized");
-    QThread::msleep(500); //make sure the previous msg is displayed
+    //QThread::msleep(500); //make sure the previous msg is displayed //BUG doesn't display until this function exits
     genova.run();
 }
 
+//this isn't used but removing it makes the MOC throw a linker error from moc_mainwindow.obj
 void MainWindow::on_toolButton_clicked()
 {
     ui->stackedWidget->setCurrentIndex(3);
