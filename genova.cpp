@@ -148,7 +148,7 @@ void Genova::run()
     //init and score 1st generation
     populate();
     for(int i=0; i<populationA.size(); i++)
-        if(fileName=="") //assign default scoring fucntion
+        if(fileName=="") //assign default scoring function
         {
             populationA[i].fitnessScore = score(populationA[i]);
             populationScore += populationA[i].fitnessScore;
@@ -158,7 +158,7 @@ void Genova::run()
             populationA[i].fitnessScore = scriptScore(populationA[i]);
             populationScore += populationA[i].fitnessScore;
         }
-    updateRoulette(populationA);
+    if(selectionType=="Roulette") updateRoulette(populationA);
 
     std::sort(populationA.begin(), populationA.end());
 
@@ -166,7 +166,7 @@ void Genova::run()
     for(int i=0; i<maxGenerations; i++)
     {
         //currently selection for parent A is in order and parent B is random unless parent A is elite
-        //TODO add selection method. Both parents are selected the same way
+        //TODO add selection method with both parents are selected the same way
         for(int j=0; j<populationSize; j++)
         {
             //copy if elite
@@ -174,7 +174,7 @@ void Genova::run()
                 populationB.replace(j, populationA.at(j));
             else
             {
-                populationB.replace(j, crossover(populationA.at(j), populationA.at(qrand() % genomeLength)));
+                populationB.replace(j, crossover(populationA.at(j), populationA.at(qrand() % populationSize)));
                 mutate(populationB[j]);
                 if(fileName=="")
                 {
@@ -191,7 +191,7 @@ void Genova::run()
         populationA = populationB;
         std::sort(populationA.begin(), populationA.end());
         populationScore = 0;
-        updateRoulette(populationA);
+        if(selectionType=="Roulette") updateRoulette(populationA);
     }
    emit sendReport(report());
 }
