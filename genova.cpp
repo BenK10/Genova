@@ -143,7 +143,7 @@ QString Genova::report()
 void Genova::run()
 {
     int eliterange = populationSize * elitismPercentage;
-    int populationScore = 0;
+    int populationScore = 0; //sum of all scores in population
 
     //init and score 1st generation
     populate();
@@ -172,25 +172,31 @@ void Genova::run()
             //copy if elite
             if(j>populationSize - eliterange)
                 populationB.replace(j, populationA.at(j));
+            //selection and crossover
             else
             {
-                populationB.replace(j, crossover(populationA.at(j), populationA.at(qrand() % populationSize)));
+              //  populationB.replace(j, crossover(populationA.at(j), populationA.at(qrand() % populationSize))); //original
+                populationB.replace(j, crossover(selection(populationA, populationScore), selection(populationA, populationScore)));
                 mutate(populationB[j]);
                 if(fileName=="")
                 {
                     populationB[j].fitnessScore = score(populationB[j]);
-                    populationScore += populationB[j].fitnessScore;
+                   // populationScore += populationB[j].fitnessScore;
                 }
                 else
                 {
                     populationB[j].fitnessScore = scriptScore(populationB[j]);
-                    populationScore += populationB[j].fitnessScore;
+                   // populationScore += populationB[j].fitnessScore;
                 }
             }
        }
-        populationA = populationB;
-        std::sort(populationA.begin(), populationA.end());
         populationScore = 0;
+
+        for(int i=0; i<populationB.size(); i++)
+            populationScore =+ populationB.at(i).fitnessScore;
+        populationA = populationB;
+
+        std::sort(populationA.begin(), populationA.end());
         if(selectionType=="Roulette") updateRoulette(populationA);
     }
    emit sendReport(report());
@@ -199,13 +205,20 @@ void Genova::run()
 //selection
 Genome Genova::selection(QVector<Genome>& population, int populationScore) const
 {
+   // QMessageBox::information(0,"error", QString::number(population.size()));
     //TODO get rid of "magic value" strings
     if(selectionType == "Random")
         return population.at(qrand() % population.size());
 
     if(selectionType == "Roulette")
     {
-        int idx = roulette.indexOf(*std::upper_bound(roulette.begin(), roulette.end(), qrand() % populationScore));
+        int idx;
+        int rouletteValue = qrand() % populationScore;
+       //  QMessageBox::information(0,"error", QString::number(population.size()));
+        if(rouletteValue <= population.at(0).fitnessScore)
+            idx = 0;
+        else
+            idx = roulette.indexOf(*std::upper_bound(roulette.begin(), roulette.end(), rouletteValue));
         return population.at(idx);
     }
 
@@ -215,14 +228,20 @@ Genome Genova::selection(QVector<Genome>& population, int populationScore) const
 
 void Genova::updateRoulette(QVector<Genome> &population)
 {
+    int runningTotal = 0;
+
     if(roulette.size() < population.size())
+    {
             roulette.reserve(population.size());
+            for(int i=0; i<population.size(); i++)
+                roulette.push_back(0);;
+    }
 
-    for(int i=0; i<roulette.size(); i++)
-        roulette[i] = 0;
-
-    for(int i=0; i<roulette.size(); i++)
-        roulette[i] += population.at(i).fitnessScore;
+    for(int i=0; i<population.size(); i++)
+    {
+        runningTotal += population.at(i).fitnessScore;
+        roulette[i] += runningTotal;
+    }
 }
 
 //kway should always be even (set on GUI)
