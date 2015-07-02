@@ -157,7 +157,7 @@ void Genova::run()
             populationA[i].fitnessScore = scriptScore(populationA[i]);
             populationScore += populationA[i].fitnessScore;
         }
-    if(selectionType=="Roulette") updateRoulette(populationA);
+   /* if(selectionType=="Roulette")*/ updateRoulette(populationA);
 
     std::sort(populationA.begin(), populationA.end());
 
@@ -189,7 +189,7 @@ void Genova::run()
         populationA = populationB;
 
         std::sort(populationA.begin(), populationA.end());
-        if(selectionType=="Roulette") updateRoulette(populationA);
+        /*if(selectionType=="Roulette")*/ updateRoulette(populationA);
     }
    emit sendReport(report());
 }
