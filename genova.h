@@ -36,15 +36,21 @@ private:
 
     QScriptEngine scriptengine;
     QScriptProgram script;
-    //QFile file;
     QString fileName;
     QString scriptString;
     QString selectionType;
     QString crossoverType;
 
+    Genome randomSelection(QVector<Genome>&, int) const;
+    Genome rouletteSelection(QVector<Genome>&, int) const;
+    Genome roulettePopulationAvgSelection(QVector<Genome>&, int) const;
+    Genome rankLinearSelection(QVector<Genome>&, int) const;
+    Genome stochasticUniversalSelection(QVector<Genome>&, int) const;
+
+    void _updateRoulette1(QVector<Genome>&);
+    void _updateRoulette2(QVector<Genome>&);
+
 public:
-//     Genova();
-//    ~Genova();
 
     void initialize(int, int, int, int, double, double, double, double, bool, bool, bool, QString, QString, QString, int, double);
     void populate();

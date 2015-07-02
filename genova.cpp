@@ -195,114 +195,68 @@ void Genova::run()
 }
 
 
+//---------------  Selection  --------------------------------------------------------------------------------
 Genome Genova::selection(QVector<Genome>& population, int populationScore) const
 {
-    if(selectionType == "Random")
-        return population.at(qrand() % population.size());
-
-    if(selectionType == "Roulette")
+    switch(selectionType)
     {
-        int idx;
-        int rouletteValue = qrand() % populationScore;
-        if(rouletteValue <= population.at(0).fitnessScore)
-            idx = 0;
-        else
-            idx = roulette.indexOf(*std::upper_bound(roulette.begin(), roulette.end(), rouletteValue));
-        return population.at(idx);
+        case "Random": return Genova::randomSelection(population, populationScore); break;
+        case "Roulette": return Genova::rouletteSelection(population, populationScore); break;
+        case "RoulettePopulationAverage": return Genova::roulettePopulationAvgSelection(population, populationScore); break;
+        case "RankLinear": return Genova::rankLinearSelection(population, populationScore); break;
+        case "StochasticUniversal": return Genova::stochasticUniversalSelection(population, populationScore); break;
+        case "Tournament": return Genova::tournamentSelection(population, kway, tourneyprob); break;
+    default: return Genova::randomSelection(population, populationScore);
     }
-
-     if(selectionType=="RoulettePopulationAverage")
-        return population.at(roulette[ qrand() % roulette.size() ]);
-
-     if(selectionType == "RankLinear")
-     {
-         int idx;
-         int rouletteValue = qrand() % population.size();
-         if(rouletteValue == 0)
-             idx = 0;
-         else
-            idx = roulette.indexOf(*std::upper_bound(roulette.begin(), roulette.end(), rouletteValue));
-        return population.at(idx);
-     }
-
-    if(selectionType == "StochasticUniversal")
-    {
-        int idx;
-        const int jumpsize = populationScore / population.size();
-        static int jumpcounter = 0;
-        if(jumpcounter = std::numeric_limits<int>::max()) //prevent overflow
-            jumpcounter = 0;
-        int rouletteValue = (jumpsize * jumpcounter) % populationScore;
-        if(rouletteValue == 0)
-            idx = 0;
-        else
-           idx = roulette.indexOf(*std::upper_bound(roulette.begin(), roulette.end(), rouletteValue));
-        jumpcounter++;
-       return population.at(idx);
-    }
-
-    if(selectionType == "Tournament")
-        return Genova::tournamentSelection(population, kway, tourneyprob);
 }
 
-void Genova::updateRoulette(QVector<Genome> &population)
+Genome randomSelection(QVector<Genome>& population, int populationScore) const
 {
-    if(selectionType=="Roulette" || selectionType=="StochasticUniversal")
-    {
-        int runningTotal = 0;
+    return population.at(qrand() % population.size());
+}
 
-        if(roulette.size() < population.size())
-        {
-            roulette.reserve(population.size());
-            for(int i=0; i<population.size(); i++)
-                roulette.push_back(0);;
-        }
+Genome rouletteSelection(QVector<Genome>& population, int populationScore) const
+{
+    int idx;
+    int rouletteValue = qrand() % populationScore;
+    if(rouletteValue <= population.at(0).fitnessScore)
+        idx = 0;
+    else
+        idx = roulette.indexOf(*std::upper_bound(roulette.begin(), roulette.end(), rouletteValue));
+    return population.at(idx);
+}
 
-        for(int i=0; i<population.size(); i++)
-        {
-            runningTotal += population.at(i).fitnessScore;
-            roulette[i] += runningTotal;
-        }
-    }
+//TODO implement
+Genome roulettePopulationAvgSelection(QVector<Genome>& population, int populationScore) const
+{
+    return population.at(qrand() % population.size());
+}
 
-    if(selectionType == "RankLinear")
-    {
-        int runningtotal = 0;
-        if(roulette.size() < population.size())
-        {
-            roulette.reserve(population.size());
-            for(int i=0; i<population.size(); i++)
-                roulette.push_back(0);;
-        }
+Genome rankLinearSelection(QVector<Genome>& population, int populationScore) const
+{
+    int idx;
+    int rouletteValue = qrand() % population.size();
+    if(rouletteValue == 0)
+        idx = 0;
+    else
+       idx = roulette.indexOf(*std::upper_bound(roulette.begin(), roulette.end(), rouletteValue));
+   return population.at(idx);
+}
 
-        for(int i=0; i<population.size(); i++)
-        {
-            runningtotal += population.at(i).fitnessScore;
-            roulette[i] += runningtotal;
-        }
-
-    }
-
-    if(selectionType=="RoulettePopulationAverage")
-    {
-        roulette.clear();
-        double r = 0;
-        int population_avg = 0;
-        for(int i=0; i<population.size(); i++)
-            population_avg += population.at(i).fitnessScore;
-        population_avg /= population.size();
-
-        //each element gets r whole copies in roulette + an additional copy with probability of the latter being (r mantissa)
-        for(int i=0; i<population.size(); i++)
-        {
-            r = population.at(i).fitnessScore / population_avg;
-            for(int j=0; j<floor(r); j++)
-                roulette.append(i);
-            r = (r - floor(r)) * 100; //get mantisaa as percentage
-            if(qrand() % 100 <= r) roulette.append(i);
-        }
-
-    }
+Genome stochasticUniversalSelection(QVector<Genome>& population, int populationScore) const
+{
+    int idx;
+    const int jumpsize = populationScore / population.size();
+    static int jumpcounter = 0;
+    if(jumpcounter = std::numeric_limits<int>::max()) //prevent overflow
+        jumpcounter = 0;
+    int rouletteValue = (jumpsize * jumpcounter) % populationScore;
+    if(rouletteValue == 0)
+        idx = 0;
+    else
+       idx = roulette.indexOf(*std::upper_bound(roulette.begin(), roulette.end(), rouletteValue));
+    jumpcounter++;
+   return population.at(idx);
 }
 
 //kway should always be even (set on GUI)
@@ -327,6 +281,67 @@ Genome Genova::tournamentSelection(QVector<Genome>& population, int kway, double
     //if no winner from above code, return weakest
     return competitors.at(0);
 }
+
+//-------------------------------------------------------------------------------------------------------------
+
+//-----------------------------------------  Roulette  -------------------------------------------------------
+
+
+void Genova::updateRoulette(QVector<Genome> &population)
+{
+    //does RankLinear need a different roulette design?
+    if(selectionType=="Roulette" || selectionType=="StochasticUniversal" || selectionType=="RankLinear")
+        _updateRoulette1(population);
+    if(selectionType=="RoulettePopulationAverage")
+         _updateRoulette2(population);
+}
+
+//for basic, stochasticU, (and rankLinear?)
+void _updateRoulette1(QVector<Genome>& population)
+{
+    if(selectionType=="Roulette" || selectionType=="StochasticUniversal" || selectionType=="RankLinear")
+    {
+        int runningTotal = 0;
+
+        if(roulette.size() < population.size())
+        {
+            roulette.reserve(population.size());
+            for(int i=0; i<population.size(); i++)
+                roulette.push_back(0);;
+        }
+
+        for(int i=0; i<population.size(); i++)
+        {
+            runningTotal += population.at(i).fitnessScore;
+            roulette[i] += runningTotal;
+        }
+    }
+}
+
+//for RoulettePopulationAverage
+void _updateRoulette2(QVector<Genome>& population)
+{
+    roulette.clear();
+    double r = 0;
+    int population_avg = 0;
+    for(int i=0; i<population.size(); i++)
+        population_avg += population.at(i).fitnessScore;
+    population_avg /= population.size();
+
+    //each element gets r whole copies in roulette + an additional copy with probability of the latter being (r mantissa)
+    for(int i=0; i<population.size(); i++)
+    {
+        r = population.at(i).fitnessScore / population_avg;
+        for(int j=0; j<floor(r); j++)
+            roulette.append(i);
+        r = (r - floor(r)) * 100; //get mantisaa as percentage
+        if(qrand() % 100 <= r) roulette.append(i);
+    }
+
+}
+
+
+
 
 
 
